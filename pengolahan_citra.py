@@ -6,7 +6,6 @@ import math
 def read_image(img):
     img_bgr = cv2.imread(img)
     
-    img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     h, w, c = img_bgr.shape
     print(f'image shape: \nheight: {h} \nwidth: {w} \nchannel: {c}')
 
@@ -118,6 +117,9 @@ def rotate_image(img, angle=0):
 
 # ripple effect
 def ripple_image(img, ax=1, ay=1, tx=1, ty=1):
+    if tx == 0 or ty == 0:
+        raise ValueError("tx and ty must be nonzero.")
+
     ripple_img = np.zeros_like(img)
     h, w, c = ripple_img.shape
 
@@ -152,7 +154,7 @@ def thresholding_image(img, threshold=128):
     for i in range(h):
         for j in range(w):
             if img[i, j] >= threshold:
-                binary_img[i, j] = 1
+                binary_img[i, j] = 255
             else:
                 binary_img[i, j] = 0
 
@@ -210,7 +212,14 @@ def contrast_adjustment(img, factor=1.0):
         for j in range(w):
             for k in range(c):
                 new_value = 128 + factor * (img[i, j, k] - 128)
-                contrast_img[i, j, k] = np.clip(new_value, 0, 255)
+
+                # Manual version of np.clip(new_value, 0, 255)
+                if new_value < 0:
+                    new_value = 0
+                elif new_value > 255:
+                    new_value = 255
+
+                contrast_img[i, j, k] = int(new_value)
 
     return contrast_img
 
@@ -221,7 +230,7 @@ def negative_image(img):
     
     for i in range(h):
         for j in range(w):
-            neg_img[i, j] = 255 - neg_img[i, j]
+            neg_img[i, j] = 255 - img[i, j]
 
     return neg_img
 
