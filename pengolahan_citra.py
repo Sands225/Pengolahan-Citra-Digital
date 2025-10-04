@@ -199,7 +199,13 @@ def brightness_adjustment(img, value=0):
         for j in range(w):
             for k in range(c):
                 new_value = img[i, j, k] + value
-                bright_img[i, j, k] = np.clip(new_value, 0, 255)
+
+                if new_value < 0:
+                    new_value = 0
+                elif new_value > 255:
+                    new_value = 255
+
+                bright_img[i, j, k] = int(new_value)
 
     return bright_img
 
@@ -213,7 +219,6 @@ def contrast_adjustment(img, factor=1.0):
             for k in range(c):
                 new_value = 128 + factor * (img[i, j, k] - 128)
 
-                # Manual version of np.clip(new_value, 0, 255)
                 if new_value < 0:
                     new_value = 0
                 elif new_value > 255:
@@ -250,7 +255,7 @@ thresh = thresholding_image(gray, threshold=128)
 double_thresh = double_thresholding_image(gray, 100, 200)
 mbit = grayscale_to_mbit(gray, m=3)
 bright = brightness_adjustment(img, value=50)
-contrast = contrast_adjustment(img, factor=1.5)
+contrast = contrast_adjustment(img, factor=2)
 negative = negative_image(img)
 
 fig, axes = plt.subplots(4, 4, figsize=(16, 16))
