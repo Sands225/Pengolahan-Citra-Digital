@@ -115,6 +115,29 @@ def rotate_image(img, angle=0):
 
     return rotated_image
 
+# crop image
+def crop_image(img, x_start=0, y_start=0, x_end=None, y_end=None):
+    h, w, c = img.shape
+
+    if x_end is None:
+        x_end = w
+    if y_end is None:
+        y_end = h
+
+    if x_start < 0 or y_start < 0 or x_end > w or y_end > h or x_start >= x_end or y_start >= y_end:
+        raise ValueError("Invalid crop coordinates.")
+
+    crop_w = x_end - x_start
+    crop_h = y_end - y_start
+
+    cropped_img = np.zeros((crop_h, crop_w, c), dtype=np.uint8)
+
+    for i in range(crop_h):
+        for j in range(crop_w):
+            cropped_img[i, j] = img[y_start + i, x_start + j]
+
+    return cropped_img
+
 # ripple effect
 def ripple_image(img, ax=1, ay=1, tx=1, ty=1):
     if tx == 0 or ty == 0:
@@ -198,14 +221,14 @@ def brightness_adjustment(img, value=0):
     for i in range(h):
         for j in range(w):
             for k in range(c):
-                new_value = img[i, j, k] + value
+                new_value = int(img[i, j, k]) + value
 
                 if new_value < 0:
                     new_value = 0
                 elif new_value > 255:
                     new_value = 255
 
-                bright_img[i, j, k] = int(new_value)
+                bright_img[i, j, k] = new_value
 
     return bright_img
 
@@ -239,27 +262,54 @@ def negative_image(img):
 
     return neg_img
 
+# histogram plotting
+def plot_histogram(img, title="Histogram"):
+    # if image is grayscale
+    if len(img.shape) == 2:
+        plt.figure(figsize=(6,4))
+        plt.hist(img.ravel(), bins=256, range=[0, 256], color='gray')
+        plt.title(f"{title} (Grayscale)")
+        plt.xlabel("Pixel Intensity")
+        plt.ylabel("Frequency")
+        plt.show()
+    
+    # if image is RGB
+    else:
+        color = ('r', 'g', 'b')
+        plt.figure(figsize=(6,4))
+        for i, col in enumerate(color):
+            plt.hist(img[:, :, i].ravel(), bins=256, range=[0, 256], color=col, alpha=0.6, label=col.upper())
+        plt.title(f"{title} (RGB)")
+        plt.xlabel("Pixel Intensity")
+        plt.ylabel("Frequency")
+        plt.legend()
+        plt.show()
 
-image = "dola_image.jpg"
+
+
+
+
+image = "sandi.jpg"
 img = read_image(image)
 
+# --- Transformations ---
 translated = translate_image(img, tx=50, ty=30)
 scaled = scale_image(img, sx=0.5, sy=0.5)
 h_mirror = horizontal_mirror(img)
 v_mirror = vertical_mirror(img)
 comb_mirror = combination_mirror(img)
 rotated = rotate_image(img, angle=45)
+cropped = crop_image(img, x_start=50, y_start=100, x_end=300, y_end=400)
 rippled = ripple_image(img, ax=10, ay=10, tx=30, ty=30)
 gray = grayscale_image(img)
 thresh = thresholding_image(gray, threshold=128)
 double_thresh = double_thresholding_image(gray, 100, 200)
 mbit = grayscale_to_mbit(gray, m=3)
-bright = brightness_adjustment(img, value=50)
-contrast = contrast_adjustment(img, factor=2)
+bright = brightness_adjustment(img, value=20)
+contrast = contrast_adjustment(img, factor=1.5)
 negative = negative_image(img)
 
-fig, axes = plt.subplots(4, 4, figsize=(16, 16))
-
+# --- List all images and titles ---
 images = [
     (img, "Original"),
     (translated, "Translated"),
@@ -268,23 +318,41 @@ images = [
     (v_mirror, "Vertical Mirror"),
     (comb_mirror, "Combination Mirror"),
     (rotated, "Rotated 45°"),
+    (cropped, "Cropped"),
     (rippled, "Ripple"),
     (gray, "Grayscale"),
     (thresh, "Thresholding"),
     (double_thresh, "Double Threshold"),
     (mbit, "3-bit Grayscale"),
-    (bright, "Brightness +50"),
-    (contrast, "Contrast x1.5"),
+    (bright, "Brightness"),
+    (contrast, "Contrast"),
     (negative, "Negative"),
 ]
 
-for ax, (im, title) in zip(axes.flatten(), images):
+# --- Display images and histograms side by side ---
+n = len(images)
+fig, axes = plt.subplots(n, 2, figsize=(10, n * 2.5))
+
+for i, (im, title) in enumerate(images):
+    img_ax = axes[i, 0]
+    hist_ax = axes[i, 1]
+
+    # Image display
+    if im is None or im.size == 0:
+        img_ax.text(0.5, 0.5, 'Invalid image', ha='center', va='center')
+        img_ax.axis('off')
+        continue
+
     if len(im.shape) == 2:
-        ax.imshow(im, cmap="gray")
+        img_ax.imshow(im, cmap='gray')
     else:
-        ax.imshow(im)
-    ax.set_title(title)
-    ax.axis("off")
+        img_ax.imshow(im)
+    img_ax.set_title(title)
+    img_ax.axis('off')
+
+    # Histogram display
+    plot_histogram(hist_ax, im)
+    hist_ax.set_title(f"{title} Histogram")
 
 plt.tight_layout()
 plt.show()
